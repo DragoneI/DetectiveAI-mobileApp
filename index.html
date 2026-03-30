@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI Detective — Multi-Model AI Image Detection</title>
+    
+    <!-- PWA Meta -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#080C10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Detective">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
+    
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+</head>
+<body>
+
+    <!-- Navigation Mobile - Bottom Tab Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-section="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" data-section="detector">
+            <i class="fas fa-camera"></i>
+            <span>Detect</span>
+        </button>
+        <button class="nav-item" data-section="features">
+            <i class="fas fa-microchip"></i>
+            <span>Features</span>
+        </button>
+        <button class="nav-item" data-section="about">
+            <i class="fas fa-chart-line"></i>
+            <span>About</span>
+        </button>
+        <button class="nav-item" data-section="contact">
+            <i class="fas fa-envelope"></i>
+            <span>Contact</span>
+        </button>
+    </nav>
+
+    <!-- Header fixe style app -->
+    <header class="app-header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="logo.png" alt="AI Detective" width="28" height="28" style="border-radius: 4px;">
+            </div>
+            <span class="logo-text">AI<span class="logo-highlight">Detective</span></span>
+        </div>
+        <button class="header-menu-btn" id="menuToggle">
+            <i class="fas fa-ellipsis-h"></i>
+        </button>
+    </header>
+
+    <!-- Menu contextuel style app -->
+    <div class="context-menu" id="contextMenu">
+        <a href="legal.html">Legal Notice</a>
+        <button id="shareAppBtn">Share App</button>
+        
+    </div>
+
+    <!-- Contenu principal scrollable -->
+    <main class="app-content">
+        <section id="home" class="section-page active">
+            <div class="hero">
+                <div class="hero-badge">
+                    <i class="fas fa-crosshairs"></i>
+                    <span>Triple AI Analysis™</span>
+                </div>
+                <h1 class="hero-title">
+                    Analyze the probability that <span class="gradient-text">content may be AI-generated</span>
+                </h1>
+                <p class="hero-description">
+                    3 AI technologies combined — TensorFlow.js, LLaVA via Cloudflare, and 
+                    pixel-level analysis — providing probability signals and insights in under 3 seconds to assist human analysis.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">3</span>
+                        <span class="stat-label">Analysis Layers</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">AI</span>
+                        <span class="stat-label">Probabilistic Results</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">&lt;3s</span>
+                        <span class="stat-label">Analysis</span>
+                    </div>
+                </div>
+                <button class="btn-primary" id="scrollToDetectorBtn">
+                    Run an analysis
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="detector" class="section-page">
+            <div class="section-header">
+                <span class="section-badge">// Multi-AI Analyzer</span>
+                <h2 class="section-title">Test our <span class="gradient-text">3 models</span></h2>
+                <p class="section-subtitle">Upload an image and get a complete AI Probability Report.</p>
+            </div>
+
+            <div class="detector-card">
+                <div class="detector-input-panel">
+                    <div class="upload-section">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <div class="upload-icon-wrapper">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <h3 class="upload-title">Drop your image here</h3>
+                                <p class="upload-text">Tap to browse</p>
+                                <p class="upload-format">PNG · JPG · WEBP · max 10 MB</p>
+                                <input type="file" id="imageInput" accept="image/*" style="display:none;">
+                                <button type="button" class="upload-btn" id="uploadBtn">Choose an image</button>
+                            </div>
+                        </div>
+
+                        <div class="preview-container" id="previewContainer" style="display:none;">
+                            <div class="preview-header">
+                                <div class="preview-title-wrapper">
+                                    <i class="fas fa-image"></i>
+                                    <h3 class="preview-title">Preview</h3>
+                                </div>
+                                <button id="removeImage" class="preview-remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="preview-image-wrapper">
+                                <img id="imagePreview" alt="Image preview">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="analyzeBtn" class="analyze-btn" disabled>
+                        <span class="btn-text">Assess AI probability</span>
+                        <i class="fas fa-microchip"></i>
+                    </button>
+
+                    <div id="modelStatus" class="model-status" style="display:none;">
+                        <div class="status-item" id="tensorflowStatus">
+                            <i class="fas fa-brain"></i>
+                            <span>TensorFlow.js</span>
+                            <span class="status-dot"></span>
+                        </div>
+                        <div class="status-item" id="cloudflareStatus">
+                            <i class="fas fa-cloud"></i>
+                            <span>LLaVA · Cloudflare</span>
+                            <span class="status-dot"></span>
+                        </div>
+                        <div class="status-item" id="localStatus">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Pixel Analysis</span>
+                            <span class="status-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div id="errorMessage" class="error-message" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+
+                <div class="detector-results-panel">
+                    <div id="emptyState" class="empty-state">
+                        <i class="fas fa-radar"></i>
+                        <p>Awaiting visual data for analysis...</p>
+                    </div>
+
+                    <div id="resultContainer" class="result-container" style="display:none;">
+                        <div class="result-header">
+                            <div class="result-title-wrapper">
+                                <i class="fas fa-file-alt"></i>
+                                <span>AI Probability Report</span>
+                            </div>
+                            <div class="confidence-badge" id="analysisBadge">Multi-Model Analysis</div>
+                        </div>
+
+                        <div class="models-scores">
+                            <div class="model-score-card">
+                                <i class="fas fa-brain"></i>
+                                <div class="model-score-info">
+                                    <span class="model-name">TensorFlow.js</span>
+                                    <span class="model-score" id="tfScore">—</span>
+                                </div>
+                            </div>
+                            <div class="model-score-card">
+                                <i class="fas fa-cloud"></i>
+                                <div class="model-score-info">
+                                    <span class="model-name">LLaVA · Cloudflare</span>
+                                    <span class="model-score" id="cloudflareScore">—</span>
+                                </div>
+                            </div>
+                            <div class="model-score-card">
+                                <i class="fas fa-chart-line"></i>
+                                <div class="model-score-info">
+                                    <span class="model-name">Pixel Analysis</span>
+                                    <span class="model-score" id="pixelScore">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="score-card">
+                            <div class="score-visual">
+                                <div class="score-ring">
+                                    <svg viewBox="0 0 140 140">
+                                        <circle class="ring-bg" cx="70" cy="70" r="60" fill="none" stroke-width="8"/>
+                                        <circle class="ring-fill" cx="70" cy="70" r="60" fill="none" stroke-width="8" stroke-linecap="round"/>
+                                    </svg>
+                                    <div class="score-text">
+                                        <span class="score-number" id="scoreValue">0</span>
+                                        <span class="score-percent">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="verdict-premium" id="verdictCard">
+                                    <div class="verdict-icon" id="verdictIcon">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <div class="verdict-text" id="verdict">Awaiting analysis…</div>
+                                    <div id="verdictSub" style="font-size:0.85rem;color:var(--txt-3);margin-top:0.6rem;line-height:1.6;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="confidence-row">
+                            <div class="confidence-bar-item">
+                                <div class="cb-label">
+                                    <span>TensorFlow</span>
+                                    <span class="cb-val" id="cbTf">0%</span>
+                                </div>
+                                <div class="cb-track"><div class="cb-fill" id="cbFillTf"></div></div>
+                            </div>
+                            <div class="confidence-bar-item">
+                                <div class="cb-label">
+                                    <span>LLaVA</span>
+                                    <span class="cb-val" id="cbCf">0%</span>
+                                </div>
+                                <div class="cb-track"><div class="cb-fill" id="cbFillCf"></div></div>
+                            </div>
+                            <div class="confidence-bar-item">
+                                <div class="cb-label">
+                                    <span>Pixel</span>
+                                    <span class="cb-val" id="cbPx">0%</span>
+                                </div>
+                                <div class="cb-track"><div class="cb-fill" id="cbFillPx"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="details-section">
+                            <div class="details-header">
+                                <i class="fas fa-terminal"></i>
+                                <h4>Detailed breakdown</h4>
+                            </div>
+                            <div class="details-grid" id="detailsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section-page">
+            <div class="section-header">
+                <span class="section-badge">// How it works</span>
+                <h2 class="section-title">3 AI models <span class="gradient-text">in synergy</span></h2>
+                <p class="section-subtitle">Designed to assist analysis through multiple complementary signals</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                    <h3>TensorFlow.js</h3>
+                    <p>Deep learning running 100% locally in your browser. Analyzes image semantics and detects statistical patterns common in AI-generated content.</p>
+                    <div class="feature-tag">⚡ 100% local &amp; private</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-cloud"></i></div>
+                    <h3>LLaVA via Cloudflare</h3>
+                    <p>Multimodal LLaVA-1.5 model hosted on Cloudflare Workers AI. Understands image content and provides a probabilistic assessment regarding AI generation with reasoning.</p>
+                    <div class="feature-tag">🌐 Pro infrastructure</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Pixel Analysis</h3>
+                    <p>Proprietary algorithm that examines JPEG compression artifacts, digital noise, generation patterns, and abnormal smoothing signatures.</p>
+                    <div class="feature-tag">🔍 Pattern estimation</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-film"></i></div>
+                    <h3>Video Forensics</h3>
+                    <p>4-layer probabilistic pipeline for short-form video — inter-frame noise coherence, local temporal consistency, audio TTS detection, and LLaVA+LLaMA vision.</p>
+                    <div class="feature-tag">🎬 Shorts · Reels · TikToks</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section-page">
+            <div class="section-header">
+                <span class="section-badge">// About</span>
+                <h2 class="section-title">A <span class="gradient-text">transparent</span> technology</h2>
+                <p class="section-subtitle">Our mission: make AI image probability analysis accessible to assist human judgment</p>
+            </div>
+            <div class="about-grid">
+                <div class="about-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Privacy first</h3>
+                    <p>Your images are never stored on our servers. The TensorFlow.js analysis runs entirely in your browser.</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-balance-scale"></i>
+                    <h3>Transparency over certainty</h3>
+                    <p>This tool highlights patterns and anomalies to help users make informed decisions, supporting human-assisted evaluation rather than absolute claims.</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-bolt"></i>
+                    <h3>Cloudflare infrastructure</h3>
+                    <p>Global edge hosting, minimal latency, high availability, and 10,000 free requests per day.</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Probabilistic by design</h3>
+                    <p>Every result is expressed as a probability (0–100%), a confidence level, and a nuanced verdict. The system never claims certainty.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section-page">
+            <div class="section-header">
+                <span class="section-badge">// Contact</span>
+                <h2 class="section-title">Connect with <span class="gradient-text">us</span></h2>
+                <p class="section-subtitle">Reach out through any of our social channels</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-card" id="emailCard">
+                        <i class="fas fa-envelope"></i>
+                        <h3>Email</h3>
+                        <p>dragonetechnology@gmail.com</p>
+                        <span>Response within 24h</span>
+                    </div>
+                    <div class="contact-card" id="instagramCard">
+                        <i class="fab fa-instagram"></i>
+                        <h3>Instagram</h3>
+                        <p>Follow Us on Instagram</p> 
+                        <span>Instant support</span>
+                    </div>
+                    <div class="contact-card" id="whatsappCard">
+                        <i class="fab fa-whatsapp"></i>
+                        <h3>WhatsApp</h3>
+                        <p>Contact Us on WhatsApp</p> 
+                        <span>Let's talk</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="disclaimer-section">
+            <div class="disclaimer-box">
+                <div class="disclaimer-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="disclaimer-content">
+                    <h3>Important Notice: Analytical Assistance Tool</h3>
+                    <p>This tool provides <strong>probabilistic signals</strong> and an informative opinion. The AI models <strong>can make mistakes</strong>. Results do not constitute absolute proof. Human judgment remains necessary.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script src="video-detector.js"></script>
+    <script src="video-audio-analyzer.js"></script>
+    <script>
+        (function() {
+            // Navigation par onglets
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('.section-page');
+            
+            function switchSection(sectionId) {
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if(section.id === sectionId) {
+                        section.classList.add('active');
+                    }
+                });
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if(item.dataset.section === sectionId) {
+                        item.classList.add('active');
+                    }
+                });
+                document.querySelector('.app-content').scrollTop = 0;
+            }
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const sectionId = item.dataset.section;
+                    switchSection(sectionId);
+                });
+            });
+            
+            document.getElementById('scrollToDetectorBtn')?.addEventListener('click', () => {
+                switchSection('detector');
+            });
+            
+            // Menu contextuel
+            const menuToggle = document.getElementById('menuToggle');
+            const contextMenu = document.getElementById('contextMenu');
+            
+            menuToggle?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                contextMenu.classList.toggle('open');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if(!menuToggle?.contains(e.target) && !contextMenu?.contains(e.target)) {
+                    contextMenu?.classList.remove('open');
+                }
+            });
+            
+            // Share
+            document.getElementById('shareAppBtn')?.addEventListener('click', () => {
+                if(navigator.share) {
+                    navigator.share({ title: 'AI Detective', text: 'Analyze AI-generated images with 3 models', url: window.location.href });
+                } else {
+                    alert('Share this link: ' + window.location.href);
+                }
+                contextMenu.classList.remove('open');
+            });
+            
+            // Install PWA
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('installAppBtn').style.display = 'flex';
+            });
+            
+            document.getElementById('installAppBtn')?.addEventListener('click', () => {
+                if(deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+                }
+                contextMenu.classList.remove('open');
+            });
+            
+            // Contacts
+            document.getElementById('emailCard')?.addEventListener('click', () => {
+                window.location.href = 'mailto:dragonetechnology@gmail.com';
+            });
+            document.getElementById('instagramCard')?.addEventListener('click', () => {
+                window.open('https://www.instagram.com/pocket.coder?igsh=MXAya2V4dzltN24wOQ==', '_blank');
+            });
+            document.getElementById('whatsappCard')?.addEventListener('click', () => {
+                window.open('https://wa.me/212644006421?text=Hello!%20I%20have%20a%20question%20about%20AI%20Detective', '_blank');
+            });
+            
+            // Upload
+            const uploadArea = document.getElementById('uploadArea');
+            if(uploadArea) {
+                uploadArea.addEventListener('click', () => document.getElementById('imageInput')?.click());
+            }
+        })();
+    </script>
+</body>
+</html>

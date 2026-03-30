@@ -1,0 +1,194 @@
+{
+  "_meta": {
+    "version": "3.0.0",
+    "description": "Forensic rules base for probabilistic AI video analysis. Never returns binary verdict — always ai_probability (0-100) + confidence (low/medium/high) + nuanced verdict.",
+    "philosophy": "This system helps a human understand if a video COULD be AI. It does not claim 100% certainty. Natural compression artifacts can generate false positives. Always cross-reference with other sources.",
+    "output_format": {
+      "ai_probability": "0-100 — never 0 or 100, always between 3 and 97",
+      "confidence": "low | medium | high — based on layer agreement",
+      "verdict": "uncertain | likely authentic | likely AI-generated",
+      "scores": { "pixel": "0-100", "temporal": "0-100", "audio": "0-100 or null", "llava": "0-100 or null" },
+      "evidence": ["list of strings describing detected anomalies with localization"]
+    }
+  },
+
+  "confidence_thresholds": {
+    "low_max": 54,
+    "medium_max": 75,
+    "note": "If confidence=low, verdict is ALWAYS uncertain, regardless of probability. Confidence is also lowered if spread between layers > 35 points.",
+    "spread_rule": "If max_score - min_score > 35 among active layers → confidence = low automatically"
+  },
+
+  "verdict_thresholds": {
+    "likely_authentic_max": 40,
+    "uncertain_max": 62,
+    "note": "These thresholds only apply if confidence != low. With low confidence, verdict is always uncertain.",
+    "verdicts": {
+      "likely authentic":    { "range": "3-40",   "confidence_required": "medium or high" },
+      "uncertain":           { "range": "41-62",  "confidence_required": "any" },
+      "likely AI-generated": { "range": "63-97",  "confidence_required": "medium or high" }
+    }
+  },
+
+  "pipeline": {
+    "layers": [
+      { "id": "pixel_coherence",  "weight": 0.25, "description": "Inter-frame noise coherence (Laplacian), chroma uniformity, DCT 8×8 block artifacts. Resistant to H.264 compression as it compares relative profiles rather than absolute values." },
+      { "id": "temporal_local",   "weight": 0.20, "description": "8 consecutive frames over 2-3s in median third. Measures local inter-frame difference (mean + CV). Sora/Runway over-interpolation = mean<1.5 AND cv<0.08." },
+      { "id": "audio_forensics",  "weight": 0.20, "description": "Ignored if music detected or silence >70%. 5 signals: uniform background noise, hard cuts, ZCR frequencies (speech), dynamic energy, TTS pause pattern." },
+      { "id": "llava_llama",      "weight": 0.35, "description": "Strongest layer. LLaVA describes 3 forensic frames, LLaMA produces structured verdict with individual flags (anatomy, text, texture, lighting, motion)." }
+    ],
+    "weight_redistribution": {
+      "no_audio":  { "pixel": 0.30, "temporal": 0.25, "llava": 0.45 },
+      "no_llava":  { "pixel": 0.35, "temporal": 0.30, "audio": 0.35 },
+      "degraded":  { "pixel": 0.55, "temporal": 0.45 }
+    }
+  },
+
+  "combo_rules": {
+    "_description": "Applied AFTER weighted average. Each rule adjusts raw score and is listed in result's combos array.",
+
+    "three_layers_ai": {
+      "condition": "3+ layers with score > 65",
+      "score_delta": "+5",
+      "confidence_effect": "reinforces medium → high if strong agreement"
+    },
+    "two_layers_ai": {
+      "condition": "2 layers with score > 65",
+      "score_delta": "+2"
+    },
+    "three_layers_real": {
+      "condition": "3+ layers with score < 35",
+      "score_delta": "-5"
+    },
+    "two_layers_real": {
+      "condition": "2 layers with score < 35",
+      "score_delta": "-2"
+    },
+    "anatomy_in_evidence": {
+      "condition": "evidence[] contains 'anatomy'",
+      "score_delta": "+4",
+      "rationale": "Anatomical errors are currently the most reliable AI signal"
+    },
+    "morphing_in_evidence": {
+      "condition": "evidence[] contains 'morphing'",
+      "score_delta": "+3",
+      "rationale": "Inter-frame morphing = AI video signature (absent in real videos)"
+    },
+    "tts_in_evidence": {
+      "condition": "evidence[] contains 'tts' or 'regular pauses'",
+      "score_delta": "+2"
+    },
+    "organic_in_evidence": {
+      "condition": "evidence[] contains 'organic' or 'natural'",
+      "score_delta": "-2",
+      "rationale": "Organic variation = positive signal for real video"
+    }
+  },
+
+  "llava_signals": {
+    "anatomy_errors": {
+      "weight": 3.0, "direction": "ai", "confidence": 0.92, "llama_flag": "anatomy_issues",
+      "keywords": ["six finger","extra finger","too many finger","deformed hand","distorted face","unnatural face","asymmetric face","melting face","missing ear","uncanny valley","anatomically incorrect","extra limb","finger fusing"],
+      "evidence_template": "frame X: anatomical errors (fingers/face/hands)"
+    },
+    "text_illegibility": {
+      "weight": 2.5, "direction": "ai", "confidence": 0.88, "llama_flag": "text_issues",
+      "keywords": ["illegible","unreadable","garbled text","nonsense text","random letters","distorted text","gibberish","incoherent text"],
+      "evidence_template": "frame X: illegible or incoherent text"
+    },
+    "texture_anomalies": {
+      "weight": 2.0, "direction": "ai", "confidence": 0.78, "llama_flag": "texture_issues",
+      "keywords": ["plastic-like","too smooth","waxy skin","airbrushed","overly smooth","synthetic texture","overly perfect","porcelain skin","no skin texture"],
+      "evidence_template": "frame X: synthetic textures (plastic-like)"
+    },
+    "lighting_physics": {
+      "weight": 2.0, "direction": "ai", "confidence": 0.80, "llama_flag": "lighting_issues",
+      "keywords": ["inconsistent shadow","impossible shadow","unrealistic lighting","light direction wrong","reflection wrong","flat lighting","physically impossible","shadow doesn't match"],
+      "evidence_template": "frame X: physically inconsistent lighting/shadows"
+    },
+    "motion_artifacts": {
+      "weight": 2.5, "direction": "ai", "confidence": 0.85, "llama_flag": "motion_artifacts",
+      "keywords": ["morphing","subject morphs","face morphs","temporal artifact","flickering","ghosting","identity inconsistency","shape-shifting","feature drift","warping during motion"],
+      "evidence_template": "frame X: morphing or inter-frame artifacts"
+    },
+    "explicit_ai": {
+      "weight": 3.5, "direction": "ai", "confidence": 0.90,
+      "keywords": ["ai-generated","generated by ai","artificial intelligence","synthetic","deepfake","looks computer generated","cgi","digitally created"]
+    },
+    "natural_indicators": {
+      "weight": 1.5, "direction": "real", "confidence": 0.72,
+      "keywords": ["natural lighting","film grain","camera shake","natural motion blur","consistent shadows","pores visible","natural imperfections","lens distortion"],
+      "evidence_template": "frame X: natural indicators of real capture"
+    }
+  },
+
+  "pixel_signals": {
+    "noise_coherence": {
+      "description": "CV of Laplacian residual across frames. < 0.05 = highly suspicious, > 0.25 = natural",
+      "ai_threshold": 0.08, "real_threshold": 0.25
+    },
+    "chroma_uniformity": {
+      "description": "Score 0-100. > 85 = chroma too uniform (AI), < 50 = natural",
+      "ai_threshold": 85, "real_threshold": 50
+    },
+    "block_artifacts": {
+      "description": "DCT 8×8 block regularity. > 75 = likely double-compression (AI)",
+      "ai_threshold": 75
+    }
+  },
+
+  "temporal_signals": {
+    "over_smooth_local": {
+      "condition": "mean < 1.5 AND cv < 0.08 over local window",
+      "score": 80,
+      "evidence_template": "temporal — AI over-interpolation on local window (Sora/Runway signature)"
+    },
+    "suspicious_smooth": {
+      "condition": "mean < 2.5 AND cv < 0.12",
+      "score": 65,
+      "evidence_template": "temporal — abnormal smoothness for active scene"
+    },
+    "choppy_framegen": {
+      "condition": "cv > 1.2",
+      "score": 72,
+      "evidence_template": "temporal — extreme inter-frame inconsistency (frame-by-frame generation)"
+    },
+    "natural_motion": {
+      "condition": "mean >= 2 AND cv >= 0.15 AND cv <= 0.80",
+      "score": 28,
+      "evidence_template": "temporal — natural motion with organic micro-variation"
+    },
+    "static_inconclusive": {
+      "condition": "mean < 0.5",
+      "score": 48,
+      "note": "Static scene = inconclusive. Do not penalize."
+    }
+  },
+
+  "audio_signals": {
+    "music_bypass": {
+      "description": "If bass > 180 ZCR/s AND treble > 1800 ZCR/s AND sustained RMS → music → layer ignored",
+      "note": "Videos with background music gave false 'real' positives. This bypass avoids corrupting the score."
+    },
+    "silence_bypass": {
+      "description": "If > 70% of samples are below silence threshold → layer ignored"
+    },
+    "tts_pause_pattern": {
+      "description": "CV of inter-word silences. < 0.15 = very regular TTS. > 0.55 = natural speech.",
+      "ai_cv_max": 0.15, "suspicious_cv_max": 0.30, "real_cv_min": 0.55
+    },
+    "noise_floor_uniformity": {
+      "description": "CV of RMS over 100ms windows. < 0.05 = uniform (TTS). > 0.40 = natural.",
+      "ai_cv_max": 0.05, "suspicious_cv_max": 0.15, "real_cv_min": 0.40
+    }
+  },
+
+  "known_limitations": {
+    "deepfake_faceswap": "Face-swaps on real video can score low. The underlying video is real, only the face is synthetic. LLaVA is the best layer to detect these.",
+    "top_tier_ai": "Best generations from Sora v2/Kling Ultra can fall into ambiguous range (40-60%). The field evolves quickly.",
+    "compressed_real": "Heavily recompressed real video can show pixel artifacts. Inter-frame approach (vs absolute values) minimizes this risk.",
+    "music_tracks": "Videos with background music: audio layer ignored. Score calculated on 3 layers max.",
+    "static_scenes": "Static scene = temporal inconclusive. Normal, not a bug.",
+    "short_videos": "Videos < 3s may lack frames for dense temporal analysis."
+  }
+}
