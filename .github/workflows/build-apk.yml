@@ -20,23 +20,24 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Clone TWA template
+      - name: Clone modern TWA template
         run: |
-          git clone https://github.com/GoogleChromeLabs/svgomg-twa.git twa-app
-
-      - name: Force Gradle 8
-        run: |
-          cd twa-app
-          sed -i 's|gradle-4.6-all|gradle-8.2-all|g' gradle/wrapper/gradle-wrapper.properties
-          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          git clone https://github.com/chromeos/pwa-to-twa.git twa-app
 
       - name: Configure TWA app
         run: |
           cd twa-app
-          sed -i 's|https://svgomg.firebaseapp.com|https://detective-ai-mobile-app.vercel.app|g' app/build.gradle
-          sed -i 's|com.chromeos.svgomg|com.detectiveai.app|g' app/build.gradle
-          sed -i 's|svgomg.firebaseapp.com|detective-ai-mobile-app.vercel.app|g' app/build.gradle
-          sed -i 's|applicationId "com.chromeos.svgomg"|applicationId "com.detectiveai.app"|g' app/build.gradle
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">AI Detective</string>
+          </resources>
+          EOF
+
+          sed -i 's|applicationId.*|applicationId "com.detectiveai.app"|g' app/build.gradle
+          sed -i 's|https://airhorner.com|https://detective-ai-mobile-app.vercel.app|g' app/src/main/AndroidManifest.xml
+          sed -i 's|airhorner.com|detective-ai-mobile-app.vercel.app|g' app/src/main/AndroidManifest.xml
+          sed -i 's|airhorner.com|detective-ai-mobile-app.vercel.app|g' app/src/main/res/values/twa_strings.xml
 
       - name: Build APK
         run: |
