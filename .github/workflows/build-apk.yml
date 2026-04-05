@@ -24,15 +24,12 @@ jobs:
         run: |
           mkdir -p twa-app/app/src/main/java/com/detectiveai/app
           mkdir -p twa-app/app/src/main/res/values
-          mkdir -p twa-app/app/src/main/res/xml
           mkdir -p twa-app/gradle/wrapper
 
-          # settings.gradle
           cat > twa-app/settings.gradle << 'EOF'
           include ':app'
           EOF
 
-          # build.gradle (root)
           cat > twa-app/build.gradle << 'EOF'
           buildscript {
               repositories {
@@ -51,7 +48,6 @@ jobs:
           }
           EOF
 
-          # gradle wrapper
           cat > twa-app/gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -60,7 +56,6 @@ jobs:
           zipStorePath=wrapper/dists
           EOF
 
-          # app/build.gradle
           cat > twa-app/app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
@@ -86,7 +81,6 @@ jobs:
           }
           EOF
 
-          # AndroidManifest.xml
           cat > twa-app/app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -99,7 +93,7 @@ jobs:
                       <meta-data
                           android:name="android.support.customtabs.trusted.DEFAULT_URL"
                           android:value="https://detective-ai-mobile-app.vercel.app" />
-                      <intent-filter android:autoVerify="true">
+                      <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
@@ -115,7 +109,6 @@ jobs:
           </manifest>
           EOF
 
-          # strings.xml
           cat > twa-app/app/src/main/res/values/strings.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -123,9 +116,12 @@ jobs:
           </resources>
           EOF
 
-          # gradlew
-          cp $(which gradle || echo /usr/bin/gradle) twa-app/gradlew 2>/dev/null || curl -s https://raw.githubusercontent.com/gradle/gradle/master/gradlew -o twa-app/gradlew
+          # Télécharger gradlew proprement
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew -o twa-app/gradlew
           chmod +x twa-app/gradlew
+
+          # Télécharger gradle-wrapper.jar
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o twa-app/gradle/wrapper/gradle-wrapper.jar
 
       - name: Build APK
         run: |
