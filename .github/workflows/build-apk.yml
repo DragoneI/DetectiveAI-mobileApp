@@ -20,29 +20,116 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Clone modern TWA template
+      - name: Create TWA project from scratch
         run: |
-          git clone https://github.com/chromeos/pwa-to-twa.git twa-app
+          mkdir -p twa-app/app/src/main/java/com/detectiveai/app
+          mkdir -p twa-app/app/src/main/res/values
+          mkdir -p twa-app/app/src/main/res/xml
+          mkdir -p twa-app/gradle/wrapper
 
-      - name: Configure TWA app
-        run: |
-          cd twa-app
-          cat > app/src/main/res/values/strings.xml << 'EOF'
+          # settings.gradle
+          cat > twa-app/settings.gradle << 'EOF'
+          include ':app'
+          EOF
+
+          # build.gradle (root)
+          cat > twa-app/build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.0'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          # gradle wrapper
+          cat > twa-app/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          # app/build.gradle
+          cat > twa-app/app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.detectiveai.app"
+                  minSdk 19
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              namespace 'com.detectiveai.app'
+          }
+          dependencies {
+              implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+          }
+          EOF
+
+          # AndroidManifest.xml
+          cat > twa-app/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:label="AI Detective"
+                  android:theme="@android:style/Theme.Black.NoTitleBar">
+                  <activity
+                      android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+                      android:exported="true">
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.DEFAULT_URL"
+                          android:value="https://detective-ai-mobile-app.vercel.app" />
+                      <intent-filter android:autoVerify="true">
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                      <intent-filter android:autoVerify="true">
+                          <action android:name="android.intent.action.VIEW"/>
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE"/>
+                          <data android:scheme="https"
+                              android:host="detective-ai-mobile-app.vercel.app"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # strings.xml
+          cat > twa-app/app/src/main/res/values/strings.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <string name="app_name">AI Detective</string>
           </resources>
           EOF
 
-          sed -i 's|applicationId.*|applicationId "com.detectiveai.app"|g' app/build.gradle
-          sed -i 's|https://airhorner.com|https://detective-ai-mobile-app.vercel.app|g' app/src/main/AndroidManifest.xml
-          sed -i 's|airhorner.com|detective-ai-mobile-app.vercel.app|g' app/src/main/AndroidManifest.xml
-          sed -i 's|airhorner.com|detective-ai-mobile-app.vercel.app|g' app/src/main/res/values/twa_strings.xml
+          # gradlew
+          cp $(which gradle || echo /usr/bin/gradle) twa-app/gradlew 2>/dev/null || curl -s https://raw.githubusercontent.com/gradle/gradle/master/gradlew -o twa-app/gradlew
+          chmod +x twa-app/gradlew
 
       - name: Build APK
         run: |
           cd twa-app
-          chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
