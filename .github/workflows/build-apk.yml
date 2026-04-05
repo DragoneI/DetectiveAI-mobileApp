@@ -11,11 +11,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Java 11
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -23,6 +23,12 @@ jobs:
       - name: Clone TWA template
         run: |
           git clone https://github.com/GoogleChromeLabs/svgomg-twa.git twa-app
+
+      - name: Force Gradle 8
+        run: |
+          cd twa-app
+          sed -i 's|gradle-4.6-all|gradle-8.2-all|g' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
 
       - name: Configure TWA app
         run: |
