@@ -19,16 +19,23 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Init TWA
+      - name: Init TWA (auto yes)
         run: |
-          bubblewrap init --manifest https://detective-ai-mobile-app.vercel.app/manifest.json --skipPwaValidation
+          yes | bubblewrap init \
+          --manifest https://detective-ai-mobile-app.vercel.app/manifest.json \
+          --skipPwaValidation \
+          --packageId com.detectiveai.app \
+          --host detective-ai-mobile-app.vercel.app \
+          --name "AI Detective" \
+          --launcherName "DetectiveAI"
 
       - name: Build APK
         run: |
-          bubblewrap build
+          cd twa*
+          yes | bubblewrap build
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: ./*.apk
+          path: twa*/app/build/outputs/apk/release/*.apk
