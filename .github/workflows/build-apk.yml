@@ -67,18 +67,13 @@ jobs:
           }
           android {
               compileSdk 34
+              namespace 'com.detectiveai.app'
               defaultConfig {
                   applicationId "com.detectiveai.app"
                   minSdk 19
                   targetSdk 34
                   versionCode 1
                   versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                      signingConfig signingConfigs.release
-                  }
               }
               signingConfigs {
                   release {
@@ -88,7 +83,12 @@ jobs:
                       storePassword System.getenv("STORE_PASSWORD")
                   }
               }
-              namespace 'com.detectiveai.app'
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.release
+                  }
+              }
           }
           dependencies {
               implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
