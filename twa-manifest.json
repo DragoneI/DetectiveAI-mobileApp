@@ -1,0 +1,76 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Create TWA project manually
+        run: |
+          mkdir -p twa-app
+          cat > twa-app/twa-manifest.json << 'EOF'
+          {
+            "packageId": "com.detectiveai.app",
+            "host": "detective-ai-mobile-app.vercel.app",
+            "name": "AI Detective",
+            "launcherName": "DetectiveAI",
+            "display": "standalone",
+            "orientation": "portrait",
+            "themeColor": "#000000",
+            "backgroundColor": "#000000",
+            "startUrl": "/",
+            "iconUrl": "https://detective-ai-mobile-app.vercel.app/icons/icon-512x512.png",
+            "maskableIconUrl": "https://detective-ai-mobile-app.vercel.app/icons/icon-512x512.png",
+            "appVersion": "1.0.0",
+            "appVersionCode": 1,
+            "signingMode": "none",
+            "generatorApp": "bubblewrap-cli",
+            "webManifestUrl": "https://detective-ai-mobile-app.vercel.app/manifest.json",
+            "fallbackType": "customtabs",
+            "features": {},
+            "alphaDependencies": { "enabled": false },
+            "enableNotifications": false,
+            "shortcuts": [],
+            "isChromeOSOnly": false,
+            "isMetaQuest": false,
+            "fullScopeUrl": "https://detective-ai-mobile-app.vercel.app/",
+            "minSdkVersion": 19,
+            "targetSdkVersion": 34
+          }
+          EOF
+
+      - name: Configure Bubblewrap
+        run: |
+          mkdir -p ~/.bubblewrap
+          echo "{\"jdkPath\": \"$JAVA_HOME\", \"androidSdkPath\": \"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
+
+      - name: Build APK
+        run: |
+          cd twa-app
+          bubblewrap build --skipPwaValidation
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: "**/app/build/outputs/apk/release/*.apk"
