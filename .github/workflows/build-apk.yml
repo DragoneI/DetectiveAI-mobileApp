@@ -24,6 +24,11 @@ jobs:
         run: |
           mkdir -p twa-app/app/src/main/java/com/detectiveai/app
           mkdir -p twa-app/app/src/main/res/values
+          mkdir -p twa-app/app/src/main/res/mipmap-mdpi
+          mkdir -p twa-app/app/src/main/res/mipmap-hdpi
+          mkdir -p twa-app/app/src/main/res/mipmap-xhdpi
+          mkdir -p twa-app/app/src/main/res/mipmap-xxhdpi
+          mkdir -p twa-app/app/src/main/res/mipmap-xxxhdpi
           mkdir -p twa-app/gradle/wrapper
 
           cat > twa-app/settings.gradle << 'EOF'
@@ -100,6 +105,7 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
                   android:label="AI Detective"
+                  android:icon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.Black.NoTitleBar">
                   <activity
                       android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
@@ -129,6 +135,13 @@ jobs:
               <string name="app_name">AI Detective</string>
           </resources>
           EOF
+
+          # Icônes depuis le repo
+          cp logo-192.png twa-app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp logo-192.png twa-app/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp logo-192.png twa-app/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp logo-192.png twa-app/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp logo-512.png twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
           curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew -o twa-app/gradlew
           chmod +x twa-app/gradlew
