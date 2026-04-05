@@ -77,6 +77,15 @@ jobs:
               buildTypes {
                   release {
                       minifyEnabled false
+                      signingConfig signingConfigs.release
+                  }
+              }
+              signingConfigs {
+                  release {
+                      keyAlias System.getenv("KEY_ALIAS")
+                      keyPassword System.getenv("KEY_PASSWORD")
+                      storeFile file("keystore.jks")
+                      storePassword System.getenv("STORE_PASSWORD")
                   }
               }
               namespace 'com.detectiveai.app'
@@ -125,7 +134,23 @@ jobs:
           chmod +x twa-app/gradlew
           curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o twa-app/gradle/wrapper/gradle-wrapper.jar
 
+      - name: Generate Keystore
+        run: |
+          keytool -genkeypair \
+            -alias ${{ secrets.KEY_ALIAS }} \
+            -keypass ${{ secrets.KEY_PASSWORD }} \
+            -keystore twa-app/app/keystore.jks \
+            -storepass ${{ secrets.STORE_PASSWORD }} \
+            -dname "CN=AI Detective, OU=App, O=DetectiveAI, L=Casablanca, S=MA, C=MA" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000
+
       - name: Build APK
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
           cd twa-app
           ./gradlew assembleRelease --no-daemon
@@ -133,5 +158,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-signed
           path: twa-app/app/build/outputs/apk/release/*.apk
