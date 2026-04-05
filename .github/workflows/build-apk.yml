@@ -11,49 +11,35 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Configure Bubblewrap (skip JDK prompt)
+      - name: Clone TWA template
         run: |
-          mkdir -p ~/.bubblewrap
-          cat > ~/.bubblewrap/config.json << 'EOF'
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_SDK_ROOT"
-          }
-          EOF
+          git clone https://github.com/GoogleChromeLabs/svgomg-twa.git twa-app
 
-      - name: Init TWA
+      - name: Configure TWA app
         run: |
-          bubblewrap init \
-            --manifest https://detective-ai-mobile-app.vercel.app/manifest.json \
-            --skipPwaValidation \
-            --packageId com.detectiveai.app \
-            --host detective-ai-mobile-app.vercel.app \
-            --name "AI Detective" \
-            --launcherName "DetectiveAI" \
-            --jdkPath "$JAVA_HOME" \
-            --androidSdkPath "$ANDROID_SDK_ROOT"
+          cd twa-app
+          sed -i 's|https://svgomg.firebaseapp.com|https://detective-ai-mobile-app.vercel.app|g' app/build.gradle
+          sed -i 's|com.chromeos.svgomg|com.detectiveai.app|g' app/build.gradle
+          sed -i 's|svgomg.firebaseapp.com|detective-ai-mobile-app.vercel.app|g' app/build.gradle
+          sed -i 's|applicationId "com.chromeos.svgomg"|applicationId "com.detectiveai.app"|g' app/build.gradle
 
       - name: Build APK
         run: |
           cd twa-app
-          bubblewrap build --skipPwaValidation
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: "**/app/build/outputs/apk/release/*.apk"
+          path: twa-app/app/build/outputs/apk/release/*.apk
