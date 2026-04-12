@@ -20,6 +20,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install ImageMagick
+        run: sudo apt-get install -y imagemagick
+
       - name: Create TWA project from scratch
         run: |
           mkdir -p twa-app/app/src/main/java/com/detectiveai/app
