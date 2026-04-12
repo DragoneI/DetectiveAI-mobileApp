@@ -29,6 +29,7 @@ jobs:
           mkdir -p twa-app/app/src/main/res/mipmap-xhdpi
           mkdir -p twa-app/app/src/main/res/mipmap-xxhdpi
           mkdir -p twa-app/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p twa-app/app/src/main/res/mipmap-anydpi-v26
           mkdir -p twa-app/gradle/wrapper
 
           cat > twa-app/settings.gradle << 'EOF'
@@ -106,6 +107,7 @@ jobs:
               <application
                   android:label="AI Detective"
                   android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.Black.NoTitleBar">
                   <activity
                       android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
@@ -136,12 +138,28 @@ jobs:
           </resources>
           EOF
 
-          # Icônes depuis le repo
-          cp logo-192.png twa-app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp logo-192.png twa-app/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cat > twa-app/app/src/main/res/values/colors.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#000000</color>
+          </resources>
+          EOF
+
+          cat > twa-app/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+
+          # Icônes
           cp logo-192.png twa-app/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp logo-192.png twa-app/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp logo-192.png twa-app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
           cp logo-192.png twa-app/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           cp logo-512.png twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          cp logo-512.png twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
 
           curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew -o twa-app/gradlew
           chmod +x twa-app/gradlew
