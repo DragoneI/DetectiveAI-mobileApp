@@ -153,13 +153,13 @@ jobs:
           </adaptive-icon>
           EOF
 
-          # Icônes
-          cp logo-192.png twa-app/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp logo-192.png twa-app/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp logo-192.png twa-app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp logo-192.png twa-app/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp logo-512.png twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          cp logo-512.png twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          # Icônes avec padding pour éviter la coupure
+          convert logo-512.png -resize 380x380 -gravity center -extent 512x512 -background black twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert logo-512.png -resize 380x380 -gravity center -extent 512x512 -background black twa-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          convert logo-192.png -resize 144x144 -gravity center -extent 192x192 -background black twa-app/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert logo-192.png -resize 108x108 -gravity center -extent 144x144 -background black twa-app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert logo-192.png -resize 72x72 -gravity center -extent 96x96 -background black twa-app/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert logo-192.png -resize 48x48 -gravity center -extent 64x64 -background black twa-app/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
           curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew -o twa-app/gradlew
           chmod +x twa-app/gradlew
